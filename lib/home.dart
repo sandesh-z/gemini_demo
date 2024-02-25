@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:gemini_demo/api_key/apikey.dart';
+import 'package:gemini_demo/api_key/api_key.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class Home extends StatefulWidget {
