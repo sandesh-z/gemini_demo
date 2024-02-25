@@ -9,6 +9,7 @@
 .history
 .svn/
 .lib/api_key/
+.lib/api_key/apikey.dart
 migrate_working_dir/
 
 # IntelliJ related
