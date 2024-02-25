@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:gemini_demo/api_key/apikey.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class Home extends StatefulWidget {
@@ -12,9 +14,9 @@ class _HomeState extends State<Home> {
   final _inputController = TextEditingController();
   bool _loading = false;
   final ScrollController _scrollController = ScrollController();
-  final apiKey = "AIzaSyD5wrUI3oDFkF2QdrgHYaezUvnH9eA5VcY";
+
   late ChatSession _session;
-  // final model = GenerativeModel(model:,apiKey: apiKey )
+  final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
 
   void _scrollDown() {
     WidgetsBinding.instance.addPostFrameCallback(
@@ -29,6 +31,12 @@ class _HomeState extends State<Home> {
   }
 
   @override
+  void initState() {
+    _session = model.startChat();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(children: [
@@ -36,7 +44,32 @@ class _HomeState extends State<Home> {
           child: ListView(
             controller: _scrollController,
             padding: const EdgeInsets.all(16.0),
-            children: [],
+            children: [
+              ..._session.history.map(
+                (content) {
+                  var text = content.parts
+                      .whereType<TextPart>()
+                      .map<String>((e) => e.text)
+                      .join('');
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        content.role == 'user' ? 'User:' : 'Gemini:',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      MarkdownBody(data: text),
+                      const Divider(),
+                      const SizedBox(height: 10.0),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
         ),
         Padding(
@@ -70,7 +103,37 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     debugPrint(_inputController.text);
+    setState(() {
+      _loading = true;
+    });
+    try {
+      final response =
+          await _session.sendMessage(Content.text(_inputController.text));
+
+      if (response.text == null) {
+        _showError('No response from API');
+      } else {
+        setState(() {
+          _loading = false;
+          _scrollDown();
+        });
+      }
+    } catch (e) {
+      _showError(e.toString());
+      setState(() {
+        _loading = false;
+      });
+    } finally {
+      _inputController.clear();
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  void _showError(String string) {
+    debugPrint("Error: $string");
   }
 }
